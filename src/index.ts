@@ -17,18 +17,13 @@ const app = express();
 
 app.set("trust proxy", 1);
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 10000;
 
 connectDB();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "https://frontend-domain.com",
-      "https://wasabi-kaze.up.railway.app",
-    ], // FRONTEND-ORIGIN
+    origin: ["http://localhost:5173", "http://localhost:3000"], // FRONTEND-ORIGIN
     credentials: true, // ALLOW COOKIES TO BE SENT
   })
 );
