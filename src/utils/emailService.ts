@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 import logger from "./logger";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 

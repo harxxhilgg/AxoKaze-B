@@ -28,3 +28,21 @@
 [2025-10-17 22:22:03] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
 [2025-10-17 22:33:28] info: 	API is accessible @ http://localhost:5000/api
 [2025-10-17 22:33:29] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-26 00:04:04] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-26 00:04:05] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-26 00:04:15] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-26 00:04:15] info: 	POST /api/auth/login ~ 200
+[2025-10-26 00:11:47] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-26 00:11:47] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-26 00:11:55] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-26 00:11:55] info: 	POST /api/auth/login ~ 200
+[2025-10-26 00:12:51] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-26 00:12:51] info: 	POST /api/auth/login ~ 200
+[2025-10-26 00:34:07] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-26 00:34:08] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-26 00:34:16] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-26 00:34:16] info: 	POST /api/auth/login ~ 200
+[2025-10-26 00:50:56] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-26 00:50:57] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-26 00:51:16] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-26 00:51:16] info: 	POST /api/auth/login ~ 200
