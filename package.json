@@ -3,7 +3,7 @@
   "version": "0.1.0-dev",
   "main": "index.js",
   "scripts": {
-    "build": "rimraf dist && tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json",
     "prestart": "npm run build",
     "dev": "dotenv -e .env.dev -- nodemon src/index.ts",
     "dev:build": "npm run build:dev && dotenv -e .env.dev -- node dist/index.js",
