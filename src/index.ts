@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Request } from "express";
 import { ServerResponse } from "http";
 import connectDB from "./config/db";
@@ -9,8 +11,7 @@ import authRoutes from "./routes/authRoutes";
 import logger from "./utils/logger";
 import morgan from "morgan";
 import chalk from "chalk";
-
-dotenv.config({ path: ".env" });
+import MongoStore from "connect-mongo";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,8 +20,8 @@ connectDB();
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"],
-    credentials: true,
+    origin: ["http://localhost:5173", "http://localhost:3000"], // FRONTEND-ORIGIN
+    credentials: true, // ALLOW COOKIES TO BE SENT
   })
 );
 
@@ -50,10 +51,17 @@ app.use(
     secret: process.env.SESSION_SECRET as string,
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      collectionName: "sessions",
+      ttl: 7 * 24 * 60 * 60,
+      autoRemove: "native",
+    }),
     cookie: {
       httpOnly: true,
-      secure: false, // Set to true in prod (w/ HTTPS)
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "none",
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 DAYS
     },
   })
 );

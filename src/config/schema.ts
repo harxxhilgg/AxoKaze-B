@@ -21,6 +21,8 @@ export const userSchema = new mongoose.Schema(
     },
     verifyToken: String,
     verifyTokenExpiry: Date,
+
+    // PASSWORD RESET
     resetToken: String,
     resetTokenExpiry: Date,
 
