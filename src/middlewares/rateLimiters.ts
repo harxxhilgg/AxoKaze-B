@@ -6,6 +6,7 @@ export const loginLimiter = rateLimit({
   message: { message: "Too many login attempts. Please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 export const otpVerifyLimiter = rateLimit({
@@ -16,6 +17,7 @@ export const otpVerifyLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 export const resendOtpLimiter = rateLimit({
@@ -24,6 +26,7 @@ export const resendOtpLimiter = rateLimit({
   message: { message: "You can resend OTP only a few times. Please wait." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 export const resetRequestLimiter = rateLimit({
@@ -32,6 +35,7 @@ export const resetRequestLimiter = rateLimit({
   message: { message: "You can reset requests. Try again later." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
 
 export const registerLimiter = rateLimit({
@@ -40,4 +44,5 @@ export const registerLimiter = rateLimit({
   message: { message: "Too many registrations from this IP. Try later." },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
 });
