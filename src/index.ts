@@ -19,15 +19,9 @@ app.set("trust proxy", 1);
 const PORT = process.env.PORT || 10000;
 
 // INITIALIZE DB CONNECTION
-let dbConnected = false;
-connectDB()
-  .then(() => {
-    dbConnected = true;
-    logger.info("Database ready.");
-  })
-  .catch((err) => {
-    logger.error("Failed to connect to MongoDB: ", err);
-  });
+connectDB().catch((err) => {
+  logger.error("Initial database connection failed: ", err);
+});
 
 app.use(
   cors({
@@ -76,19 +70,16 @@ app.use(
   })
 );
 
-app.use((req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
-    logger.warn("Database not connected, attempting to reconnect...");
-    connectDB()
-      .then(() => next())
-      .catch((err) => {
-        logger.error("Database connection failed: ", err);
-        res.status(503).json({
-          message: "Database temporarily unavailable. Please try again.",
-        });
-      });
-  } else {
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
     next();
+  } catch (e) {
+    logger.error("Database connection failed: ", e);
+
+    res.status(503).json({
+      message: "Database temporarily unavailable. Please try again later.",
+    });
   }
 });
 
@@ -100,17 +91,16 @@ app.get("/", (req, res) => {
 });
 
 app.get("/api", (req, res) => {
-  res.json({ message: "Auth routes are up." });
+  res.json({ message: "API endpoint is working." });
 });
 
 // ONLY LISTEN ON LOCAL DEVELOPMENT
-// if (process.env.NODE_ENV !== "production") {
+// if (process.env.NODE_ENV === "development") {
 //   app.listen(PORT, () => {
 //     logger.info(`API is accessible @ http://localhost:${PORT}/api`);
 //   });
 // }
 
-//! REMOVE IN PROD WHILE DEPLOYING ~ USE ABOVE BLOCK NOT THIS
 app.listen(PORT, () => {
   logger.info(`API is accessible @ http://localhost:${PORT}/api`);
 });

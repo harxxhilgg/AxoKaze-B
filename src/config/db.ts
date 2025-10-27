@@ -1,42 +1,41 @@
 import mongoose from "mongoose";
 import logger from "../utils/logger";
 
-let isConnected = false;
+let cachedConnection: Promise<typeof mongoose> | null = null;
 
 const connectDB = async () => {
-  // IF ALREADY CONNECTED, REUSE THE CONNECTION
-  if (isConnected && mongoose.connection.readyState === 1) {
-    logger.info("MongoDB: Using existing connection.");
-    return;
+  if (cachedConnection) {
+    return cachedConnection;
+  }
+
+  // IF ALREADY CONNECTED, RETURN IMMEDIATELY
+  if (mongoose.connection.readyState === 1) {
+    return mongoose;
   }
 
   try {
     if (!process.env.MONGO_URI) {
-      logger.error(
-        "MONGO_URI is not set in environment. Skipping MongoDB connection."
-      );
-      return;
+      throw new Error("MONGO_URI is not set in environment");
     }
 
-    // SET MONGOOSE TO NOT BUFFER COMMANDS
-    mongoose.set("bufferCommands", false);
-
-    const connect = await mongoose.connect(process.env.MONGO_URI as string, {
+    cachedConnection = mongoose.connect(process.env.MONGO_URI as string, {
       maxPoolSize: 10,
       serverSelectionTimeoutMS: 10000,
       socketTimeoutMS: 45000,
-      family: 4, // USE IPv4, SKIP TRYING IPv6
+      family: 4,
     });
 
-    isConnected = true;
-    logger.info(`MongoDB Connected @ ${connect.connection.host}`);
+    const connection = await cachedConnection;
+    logger.info(`MongoDB Connected @ ${mongoose.connection.host}`);
+    return connection;
   } catch (e) {
     logger.error("MongoDB Connection Error: ", e);
-    isConnected = false;
-    // DON'T EXIT IN SERVERLESS ~ JUST LOG THE ERROR
+    cachedConnection = null; // RESET CACHE ON ERROR
+
     if (process.env.NODE_ENV !== "production") {
       process.exit(1);
     }
+
     throw e;
   }
 };
