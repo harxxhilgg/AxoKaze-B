@@ -402,7 +402,7 @@ export const logout = async (req: Request, res: Response) => {
     res.json({ message: "Logged out successfully." });
   } catch (error) {
     logger.error("Logout error: ", error);
-    return res.status(500).json({ message: "Internal session error." });
+    return res.status(500).json({ message: "Internal server error." });
   }
 };
 

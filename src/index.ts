@@ -47,6 +47,12 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 
-app.listen(PORT, () => {
-  logger.info(`API is accessible @ http://localhost:${PORT}/api`);
-});
+// only listen on local development
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    logger.info(`API is accessible @ http://localhost:${PORT}/api`);
+  });
+}
+
+// FOR VERCEL
+export default app;

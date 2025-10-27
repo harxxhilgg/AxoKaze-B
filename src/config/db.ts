@@ -1,7 +1,14 @@
 import mongoose from "mongoose";
 import logger from "../utils/logger";
 
+let isConnected = false;
+
 const connectDB = async () => {
+  if (isConnected) {
+    logger.info("MongoDB already connected");
+    return;
+  }
+
   try {
     if (!process.env.MONGO_URI) {
       logger.error(
@@ -10,12 +17,16 @@ const connectDB = async () => {
       return;
     }
 
-    const connect = await mongoose.connect(process.env.MONGO_URI as string);
+    const connect = await mongoose.connect(process.env.MONGO_URI as string, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
 
+    isConnected = true;
     logger.info(`MongoDB Connected @ ${connect.connection.host}`);
   } catch (e) {
     logger.error("MongoDB Connection Error: ", e);
-
     process.exit(1);
   }
 };
