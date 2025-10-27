@@ -3,14 +3,10 @@
   "version": "0.1.0-dev",
   "main": "index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "prestart": "npm run build",
+    "build": "rimraf dist && tsc",
     "dev": "dotenv -e .env.dev -- nodemon src/index.ts",
-    "dev:build": "npm run build:dev && dotenv -e .env.dev -- node dist/index.js",
-    "build:dev": "dotenv -e .env.dev -- npm run build",
-    "build:prod": "dotenv -e .env.prod -- npm run build",
-    "prod": "npm run build:prod && dotenv -e .env.prod -- node dist/index.js",
-    "start": "node dist/index.js"
+    "prod": "npm run build && dotenv -e .env.prod -- node dist/src/index.js",
+    "start": "node dist/src/index.js"
   },
   "keywords": [],
   "author": "harshil0",

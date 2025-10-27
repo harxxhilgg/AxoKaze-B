@@ -15,11 +15,18 @@ const app = express();
 
 const PORT = process.env.PORT || 10000;
 
-connectDB();
+// INITIALIZE DB CONNECTION (DON'T BLOCK ON STARTUP)
+connectDB().catch((err) => {
+  logger.error("Failed to connect to MongoDb: ", err);
+});
 
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:3000"], // FRONTEND-ORIGIN
+    origin: [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "https://axo-kaze-b.vercel.app",
+    ], // FRONTEND-ORIGIN
     credentials: true, // ALLOW COOKIES TO BE SENT
   })
 );
@@ -47,7 +54,16 @@ app.use(
 
 app.use("/api/auth", authRoutes);
 
-// only listen on local development
+// ROUTE HEALTH CHECK
+app.get("/", (req, res) => {
+  res.json({ messgae: "API is running", status: "ok" });
+});
+
+app.get("/api", (req, res) => {
+  res.json({ message: "Auth routes are up." });
+});
+
+// ONLY LISTEN ON LOCAL DEVELOPMENT
 if (process.env.NODE_ENV !== "production") {
   app.listen(PORT, () => {
     logger.info(`API is accessible @ http://localhost:${PORT}/api`);

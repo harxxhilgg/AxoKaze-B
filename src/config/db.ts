@@ -27,7 +27,10 @@ const connectDB = async () => {
     logger.info(`MongoDB Connected @ ${connect.connection.host}`);
   } catch (e) {
     logger.error("MongoDB Connection Error: ", e);
-    process.exit(1);
+    // DON'T EXIT IN SERVERLESS ~ JUST LOG THE ERROR
+    if (process.env.NODE_ENV !== "production") {
+      process.exit(1);
+    }
   }
 };
 
