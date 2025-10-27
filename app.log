@@ -63,3 +63,14 @@
 [2025-10-27 11:57:10] info: 	POST /api/auth/login ~ 200
 [2025-10-27 20:47:36] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-02.im2ut9j.mongodb.net
 [2025-10-27 20:52:58] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-01.im2ut9j.mongodb.net
+[2025-10-27 21:31:57] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-02.im2ut9j.mongodb.net
+[2025-10-27 21:31:57] info: 	Database ready.
+[2025-10-27 21:32:42] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-27 21:32:43] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-01.im2ut9j.mongodb.net
+[2025-10-27 21:32:43] info: 	Database ready.
+[2025-10-27 21:32:50] info: 	POST /api/auth/forgot-password ~ 200
+[2025-10-27 21:50:55] info: 	API is accessible @ http://localhost:5000/api
+[2025-10-27 21:50:56] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-10-27 21:50:56] info: 	Database ready.
+[2025-10-27 21:51:02] info: 	📧 OTP email sent to: harshilop72@gmail.com
+[2025-10-27 21:51:02] info: 	POST /api/auth/login ~ 200

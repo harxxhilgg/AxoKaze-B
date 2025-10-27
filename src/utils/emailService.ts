@@ -54,7 +54,7 @@ export const sendOtpEmail = async (
         html: html,
       });
 
-      logger.info(`📧 OTP email sent to: ${email}`);
+      logger.info(`📧 OTP sent to: ${email}`);
     } else {
       // SENDING TO MAILHOG ~ MAKE SURE YOUR MAILHOG INSTANCE IS RUNNING
       await devTransporter.sendMail({

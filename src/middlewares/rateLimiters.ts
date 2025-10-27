@@ -32,7 +32,7 @@ export const resendOtpLimiter = rateLimit({
 export const resetRequestLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   limit: 3,
-  message: { message: "You can reset requests. Try again later." },
+  message: { message: "Too many reset requests. Try again later." },
   standardHeaders: true,
   legacyHeaders: false,
   validate: { trustProxy: false },

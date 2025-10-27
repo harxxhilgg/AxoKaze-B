@@ -26,7 +26,7 @@ connectDB()
     logger.info("Database ready.");
   })
   .catch((err) => {
-    logger.error("Failed to conenct to MongoDB: ", err);
+    logger.error("Failed to connect to MongoDB: ", err);
   });
 
 app.use(
@@ -96,7 +96,7 @@ app.use("/api/auth", authRoutes);
 
 // ROUTE HEALTH CHECK
 app.get("/", (req, res) => {
-  res.json({ messgae: "API is running", status: "ok" });
+  res.json({ message: "API is running", status: "ok" });
 });
 
 app.get("/api", (req, res) => {
@@ -104,11 +104,16 @@ app.get("/api", (req, res) => {
 });
 
 // ONLY LISTEN ON LOCAL DEVELOPMENT
-if (process.env.NODE_ENV !== "production") {
-  app.listen(PORT, () => {
-    logger.info(`API is accessible @ http://localhost:${PORT}/api`);
-  });
-}
+// if (process.env.NODE_ENV !== "production") {
+//   app.listen(PORT, () => {
+//     logger.info(`API is accessible @ http://localhost:${PORT}/api`);
+//   });
+// }
+
+//! REMOVE IN PROD WHILE DEPLOYING ~ USE ABOVE BLOCK NOT THIS
+app.listen(PORT, () => {
+  logger.info(`API is accessible @ http://localhost:${PORT}/api`);
+});
 
 // FOR VERCEL
 export default app;
