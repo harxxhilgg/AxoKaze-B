@@ -9,7 +9,6 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import logger from "./utils/logger";
 import morgan from "morgan";
-import chalk from "chalk";
 
 const app = express();
 
@@ -17,7 +16,7 @@ const PORT = process.env.PORT || 10000;
 
 // INITIALIZE DB CONNECTION (DON'T BLOCK ON STARTUP)
 connectDB().catch((err) => {
-  logger.error("Failed to connect to MongoDb: ", err);
+  logger.error("Failed to connect to MongoDB: ", err);
 });
 
 app.use(
@@ -25,8 +24,8 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
-      "https://axo-kaze-b.vercel.app",
-    ], // FRONTEND-ORIGIN
+      "https://axokaze.vercel.app",
+    ],
     credentials: true, // ALLOW COOKIES TO BE SENT
   })
 );
@@ -34,15 +33,30 @@ app.use(
 app.use(express.json());
 app.use(cookieParser()); // FOR JWT COOKIES
 
-morgan.token("colored-status", (req: Request, res: ServerResponse) => {
+let chalk: any = null;
+if (process.env.NODE_ENV !== "production") {
+  try {
+    chalk = require("chalk");
+  } catch (error) {
+    logger.error("Chalk not available, no problem.");
+  }
+}
+
+morgan.token("status-code", (req: Request, res: ServerResponse) => {
   const status = (res as ServerResponse).statusCode ?? 0;
   const statusStr = String(status);
-  return status >= 200 && status < 300
-    ? chalk.green(statusStr)
-    : chalk.red(statusStr);
+
+  // USE COLORS ONLY IN DEVELOPMENT WHEN CHALK IS AVAILABLE
+  if (chalk) {
+    return status >= 200 && status < 300
+      ? chalk.green(statusStr)
+      : chalk.red(statusStr);
+  }
+
+  return statusStr;
 });
 
-const morganFormat = ":method :url ~ :colored-status";
+const morganFormat = ":method :url ~ :status-code";
 
 app.use(
   morgan(morganFormat, {

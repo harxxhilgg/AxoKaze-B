@@ -61,3 +61,5 @@
 [2025-10-27 11:56:55] info: 	POST /api/auth/login ~ 401
 [2025-10-27 11:57:10] info: 	📧 OTP email sent to: harshilop72@gmail.com
 [2025-10-27 11:57:10] info: 	POST /api/auth/login ~ 200
+[2025-10-27 20:47:36] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-02.im2ut9j.mongodb.net
+[2025-10-27 20:52:58] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-01.im2ut9j.mongodb.net
