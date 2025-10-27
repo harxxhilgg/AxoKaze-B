@@ -12,6 +12,9 @@ import morgan from "morgan";
 
 const app = express();
 
+// TRUST PROXY FOR VERCEL DEPLOYMENT
+app.set("trust proxy", 1);
+
 const PORT = process.env.PORT || 10000;
 
 // INITIALIZE DB CONNECTION (DON'T BLOCK ON STARTUP)
