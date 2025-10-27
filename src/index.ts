@@ -9,6 +9,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import logger from "./utils/logger";
 import morgan from "morgan";
+import mongoose from "mongoose";
 
 const app = express();
 
@@ -17,10 +18,16 @@ app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 10000;
 
-// INITIALIZE DB CONNECTION (DON'T BLOCK ON STARTUP)
-connectDB().catch((err) => {
-  logger.error("Failed to connect to MongoDB: ", err);
-});
+// INITIALIZE DB CONNECTION
+let dbConnected = false;
+connectDB()
+  .then(() => {
+    dbConnected = true;
+    logger.info("Database ready.");
+  })
+  .catch((err) => {
+    logger.error("Failed to conenct to MongoDB: ", err);
+  });
 
 app.use(
   cors({
@@ -68,6 +75,22 @@ app.use(
     },
   })
 );
+
+app.use((req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    logger.warn("Database not connected, attempting to reconnect...");
+    connectDB()
+      .then(() => next())
+      .catch((err) => {
+        logger.error("Database connection failed: ", err);
+        res.status(503).json({
+          message: "Database temporarily unavailable. Please try again.",
+        });
+      });
+  } else {
+    next();
+  }
+});
 
 app.use("/api/auth", authRoutes);
 
