@@ -6,20 +6,6 @@ dotenv.config();
 
 const isProd: boolean = process.env.NODE_ENV === "production";
 
-// 🔍 DEBUG LOGGING - Remove after fixing
-if (isProd) {
-  console.log("=== EMAIL SERVICE DEBUG ===");
-  console.log("NODE_ENV:", process.env.NODE_ENV);
-  console.log("GMAIL_EMAIL:", process.env.GMAIL_EMAIL);
-  console.log("GMAIL_PASSWORD exists:", !!process.env.GMAIL_PASSWORD);
-  console.log("GMAIL_PASSWORD length:", process.env.GMAIL_PASSWORD?.length);
-  console.log(
-    "GMAIL_PASSWORD first 4 chars:",
-    process.env.GMAIL_PASSWORD?.substring(0, 4)
-  );
-  console.log("===========================");
-}
-
 // DEVELOPMENT ~ NODEMAILER + MAILHOG
 const devTransporter = nodemailer.createTransport({
   // @ts-ignore
@@ -72,7 +58,7 @@ export const sendOtpEmail = async (
     } else {
       // SENDING TO MAILHOG ~ MAKE SURE YOUR MAILHOG INSTANCE IS RUNNING
       await devTransporter.sendMail({
-        from: process.env.EMAIL_FROM,
+        from: `Kaze <${process.env.GMAIL_EMAIL}>`,
         to: email,
         subject: subject,
         html: html,

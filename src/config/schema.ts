@@ -34,6 +34,10 @@ export const userSchema = new mongoose.Schema(
       default: 0,
     },
     lastOtpSent: Date,
+
+    // JWT REFRESH TOKENS
+    refreshToken: String,
+    refreshTokenExpiry: Date,
   },
   {
     timestamps: true,

@@ -10,16 +10,13 @@ import { User } from "../config/model";
 import { generateOtp, isOtpExpired } from "../utils/otpService";
 import { sendOtpEmail, sendPasswordResetEmail } from "../utils/emailService";
 import { generateResetToken } from "../utils/passwordService";
-
-declare module "express-session" {
-  interface SessionData {
-    user: {
-      id: string;
-      email: string;
-      name: string;
-    };
-  }
-}
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  setTokenCookies,
+  clearTokenCookies,
+  verifyRefreshToken,
+} from "../utils/jwtService";
 
 /*
   /register
@@ -53,15 +50,39 @@ export const register = async (req: Request, res: Response) => {
     const newUser = new User({ name, email, password: hashed });
     await newUser.save();
 
-    req.session.user = {
+    // GENERATE TOKENS
+    const accessToken = generateAccessToken({
       id: newUser._id.toString(),
       email: newUser.email,
       name: newUser.name,
-    };
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: newUser._id.toString(),
+      email: newUser.email,
+      name: newUser.name,
+    });
+
+    // STORE REFRESH TOKEN IN DB
+    newUser.refreshToken = refreshToken;
+    newUser.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await newUser.save();
+
+    // SET COOKIES
+    setTokenCookies(res, accessToken, refreshToken);
 
     return res.status(201).json({
       message: "User created successfully.",
-      user: { id: newUser._id, name: newUser.name, email: newUser.email },
+      user: {
+        id: newUser._id,
+        name: newUser.name,
+        email: newUser.email,
+        password: newUser.password, // ! REMOVE LATER
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      },
     });
   } catch (e) {
     logger.error(e);
@@ -84,12 +105,20 @@ export const login = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found." });
+      return (
+        res
+          .status(404)
+          // FOR SECURITY REASONS DO NOT TELL USER THAT EMAIL DOES NOT ASSOCIATE WITH ACCOUNT
+          .json({ message: "The email or password you entered is incorrect." })
+      );
     }
 
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
-      return res.status(401).json({ message: "Invalid credentials." });
+      return res.status(401).json({
+        message:
+          "The email or password you entered doesn't match our records. Please try again or reset your password.",
+      });
     }
 
     // GENERATE OTP
@@ -110,7 +139,7 @@ export const login = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json({
-      message: "OTP sent to your mailbox.",
+      message: "A 6-digit OTP has been sent to your mailbox.",
       requiresOtp: true,
       email: email,
     });
@@ -176,19 +205,106 @@ export const verifyOtp = async (req: Request, res: Response) => {
     user.isVerified = true;
     await user.save();
 
-    // CREATE SESSION
-    req.session.user = {
+    // GENERATE TOKENS
+    const accessToken = generateAccessToken({
       id: user._id.toString(),
       email: user.email,
       name: user.name,
-    };
+    });
+
+    const refreshToken = generateRefreshToken({
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+    });
+
+    // STORE REFRESH TOKEN IN DB
+    user.refreshToken = refreshToken;
+    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await user.save();
+
+    // SET COOKIES
+    setTokenCookies(res, accessToken, refreshToken);
 
     return res.status(200).json({
       message: "Login successful",
-      user: { id: user._id, name: user.name, email: user.email },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      tokens: {
+        accessToken,
+        refreshToken,
+      }, // FOR TESTING ONLY, REMOVE IN PROD
     });
   } catch (error) {
     logger.error("Login step 2 error: ", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
+/*
+  /refresh-token
+*/
+
+export const refreshToken = async (req: Request, res: Response) => {
+  try {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: "Refresh token not found." });
+    }
+
+    // VERIFY REFRESH TOKEN
+    const decoded = verifyRefreshToken(refreshToken);
+    if (!decoded) {
+      return res.status(401).json({ message: "Invalid refresh token." });
+    }
+
+    // CHECK IF TOKEN EXISTS IN DB
+    const user = await User.findOne({
+      _id: decoded.id,
+      refreshToken: refreshToken,
+      refreshTokenExpiry: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res
+        .status(401)
+        .json({ message: "Refresh token expired or invalid." });
+    }
+
+    // GENERATE NEW TOKENS
+    const newAccessToken = generateAccessToken({
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+    });
+
+    const newRefreshToken = generateRefreshToken({
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+    });
+
+    // UPDATE REFRESH TOKEN IN DB
+    user.refreshToken = newRefreshToken;
+    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await user.save();
+
+    // SET NEW COOKIES
+    setTokenCookies(res, newAccessToken, newRefreshToken);
+
+    return res.status(200).json({
+      message: "Tokens refresh successfully.",
+      tokens: {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      },
+    });
+  } catch (error) {
+    logger.error("Token refresh error: ", error);
     return res.status(500).json({ message: "Internal server error." });
   }
 };
@@ -258,7 +374,7 @@ export const getProfile = (req: Request, res: Response) => {
   try {
     res.json({
       message: "Profile fetched successfully.",
-      user: req.session.user,
+      user: (req as any).user,
     });
   } catch (error) {
     logger.error("Profile fetch error: ", error);
@@ -272,14 +388,18 @@ export const getProfile = (req: Request, res: Response) => {
 
 export const logout = async (req: Request, res: Response) => {
   try {
-    req.session.destroy((error) => {
-      if (error) {
-        return res.status(500).json({ message: "Logout failed." });
-      }
+    const userId = (req as any).user?.id;
 
-      res.clearCookie("connect.sid"); // Clear session cookie
-      res.json({ message: "Logged out successfully." });
-    });
+    if (userId) {
+      await User.findByIdAndUpdate(userId, {
+        refreshToken: undefined,
+        refreshTokenExpiry: undefined,
+      });
+    }
+
+    clearTokenCookies(res);
+
+    res.json({ message: "Logged out successfully." });
   } catch (error) {
     logger.error("Logout error: ", error);
     return res.status(500).json({ message: "Internal session error." });
@@ -298,7 +418,7 @@ export const updateProfile = async (req: Request, res: Response) => {
     }
 
     const { name, email, currentPassword } = req.body;
-    const userId = req.session.user?.id;
+    const userId = (req as any).user?.id;
 
     // FIND USER BY ID
     const user = await User.findById(userId);
@@ -343,11 +463,28 @@ export const updateProfile = async (req: Request, res: Response) => {
     );
 
     // UPDATE SESSION IF EMAIL CHANGED
-    if (email) {
-      req.session.user!.email = email;
-    }
-    if (name) {
-      req.session.user!.name = name;
+    if (email || name) {
+      const accessToken = generateAccessToken({
+        id: updatedUser!._id.toString(),
+        email: updatedUser!.email,
+        name: updatedUser!.name,
+      });
+
+      const refreshToken = generateAccessToken({
+        id: updatedUser!._id.toString(),
+        email: updatedUser!.email,
+        name: updatedUser!.name,
+      });
+
+      // UPDATE REFRESH TOKEN IN DB
+      updatedUser!.refreshToken = refreshToken;
+      updatedUser!.refreshTokenExpiry = new Date(
+        Date.now() + 7 * 24 * 60 * 60 * 1000
+      );
+      await updatedUser!.save();
+
+      // SET NEW COOKIES
+      setTokenCookies(res, accessToken, refreshToken);
     }
 
     return res.status(200).json({

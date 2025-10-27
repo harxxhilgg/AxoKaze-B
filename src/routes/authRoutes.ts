@@ -9,6 +9,7 @@ import {
   resetPassword,
   updateProfile,
   resendOtp,
+  refreshToken,
 } from "../controllers/authController";
 import { requireAuth } from "../middlewares/authMiddleware";
 import {
@@ -29,13 +30,14 @@ router.get("/", (req, res) => {
 router.post("/register", registerLimiter, register);
 router.post("/login", loginLimiter, login);
 router.post("/verify-otp", otpVerifyLimiter, verifyOtp);
+router.post("/resend-otp", resendOtpLimiter, resendOtp);
+router.post("/refresh-token", refreshToken);
 router.post("/forgot-password", resetRequestLimiter, requestPasswordReset);
 router.post("/reset-password", resetPassword);
-router.post("/resend-otp", resendOtpLimiter, resendOtp);
 
 // Protected routes
 router.get("/get-profile", requireAuth, getProfile);
-router.get("/logout", requireAuth, logout);
+router.post("/logout", requireAuth, logout);
 router.put("/update-profile", requireAuth, updateProfile);
 
 export default router;

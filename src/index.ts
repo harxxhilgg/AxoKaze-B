@@ -6,16 +6,12 @@ import { ServerResponse } from "http";
 import connectDB from "./config/db";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import session from "express-session";
 import authRoutes from "./routes/authRoutes";
 import logger from "./utils/logger";
 import morgan from "morgan";
 import chalk from "chalk";
-import MongoStore from "connect-mongo";
 
 const app = express();
-
-app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 10000;
 
@@ -29,7 +25,7 @@ app.use(
 );
 
 app.use(express.json());
-app.use(cookieParser());
+app.use(cookieParser()); // FOR JWT COOKIES
 
 morgan.token("colored-status", (req: Request, res: ServerResponse) => {
   const status = (res as ServerResponse).statusCode ?? 0;
@@ -45,26 +41,6 @@ app.use(
   morgan(morganFormat, {
     stream: {
       write: (message: string) => logger.info(message.trim()),
-    },
-  })
-);
-
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET as string,
-    resave: false,
-    saveUninitialized: false,
-    store: MongoStore.create({
-      mongoUrl: process.env.MONGO_URI,
-      collectionName: "sessions",
-      ttl: 7 * 24 * 60 * 60,
-      autoRemove: "native",
-    }),
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "none",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 DAYS
     },
   })
 );
