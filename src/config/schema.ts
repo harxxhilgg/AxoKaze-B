@@ -38,6 +38,22 @@ export const userSchema = new mongoose.Schema(
     // JWT REFRESH TOKENS
     refreshToken: String,
     refreshTokenExpiry: Date,
+
+    // GOOGLE AUTH
+    googleId: {
+      type: String,
+      sparse: true
+    },
+    profilePicture: String,
+    authProvider: {
+      type: String,
+      enum: ['local', 'google', 'both'],
+      default: 'local'
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false
+    }, // track if email is verified
   },
   {
     timestamps: true,

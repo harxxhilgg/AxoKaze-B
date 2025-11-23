@@ -9,7 +9,6 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes";
 import logger from "./utils/logger";
 import morgan from "morgan";
-import mongoose from "mongoose";
 
 const app = express();
 
@@ -17,6 +16,7 @@ const app = express();
 app.set("trust proxy", 1);
 
 const PORT = process.env.PORT || 10000;
+const isDev = process.env.NODE_ENV === "development";
 
 // INITIALIZE DB CONNECTION
 connectDB().catch((err) => {
@@ -28,7 +28,7 @@ app.use(
     origin: [
       "http://localhost:5173",
       "http://localhost:3000",
-      "https://axokaze.vercel.app",
+      "https://axokaze.vercel.app", // DEPLOYED API URI
     ],
     credentials: true, // ALLOW COOKIES TO BE SENT
   })
@@ -38,7 +38,7 @@ app.use(express.json());
 app.use(cookieParser()); // FOR JWT COOKIES
 
 let chalk: any = null;
-if (process.env.NODE_ENV !== "production") {
+if (isDev) {
   try {
     chalk = require("chalk");
   } catch (error) {
@@ -102,7 +102,11 @@ app.get("/api", (req, res) => {
 // }
 
 app.listen(PORT, () => {
-  logger.info(`API is accessible @ http://localhost:${PORT}/api`);
+  if (isDev) {
+    logger.info(`API is accessible @ http://localhost:${PORT}/api`);
+  } else {
+    logger.info(`API is accessible @ https://axokaze.vercel.app/api`);
+  };
 });
 
 // FOR VERCEL

@@ -46,3 +46,12 @@ export const registerLimiter = rateLimit({
   legacyHeaders: false,
   validate: { trustProxy: false },
 });
+
+export const googleLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  message: { message: "Too many login attempts. Please try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: { trustProxy: false },
+});

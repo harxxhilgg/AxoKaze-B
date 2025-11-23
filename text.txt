@@ -1,0 +1,552 @@
+===============================================================================
+BACKEND AUTHENTICATION ENDPOINTS & OPTIMAL FRONTEND IMPLEMENTATION
+===============================================================================
+
+📍 YOUR BACKEND ENDPOINTS
+===============================================================================
+
+1. REFRESH TOKEN ENDPOINT
+   - URL: POST /api/auth/refresh-token
+   - Type: Public route (no auth required)
+   - Purpose: Get new access & refresh tokens
+   - Expects: Refresh token from cookies (automatic)
+
+2. LOGOUT ENDPOINT
+   - URL: POST /api/auth/logout
+   - Type: Protected route (requires auth)
+   - Purpose: Clears tokens from DB and cookies
+   - Action: Sets refreshToken & refreshTokenExpiry to undefined
+
+3. GET PROFILE ENDPOINT
+   - URL: GET /api/auth/get-profile
+   - Type: Protected route
+   - Purpose: Fetch current user data
+
+===============================================================================
+🎯 RECOMMENDED APPROACH: HYBRID (SECURITY + PERFORMANCE)
+===============================================================================
+
+✅ BEST BALANCE OF SECURITY AND PERFORMANCE
+
+Why This Approach?
+------------------
+✓ Security: Validates session on app initialization
+✓ Performance: No repeated checks on every route change
+✓ Fresh Tokens: Auto-refresh mechanism handles expired tokens
+✓ User Experience: Fast navigation, no loading flickers
+✓ Real-time Security: Catches revoked/expired sessions immediately
+
+
+===============================================================================
+📦 STATE MANAGEMENT
+===============================================================================
+
+RECOMMENDATION: Keep Zustand (Option A)
+
+Reasons:
+--------
+✓ Already implemented in your project
+✓ Lighter than React Context (~1KB)
+✓ Better performance (no Context re-render issues)
+✓ Simpler API
+✓ Easy localStorage persistence
+✓ Perfect for auth state management
+
+
+===============================================================================
+🔐 SESSION CHECK STRATEGY (HYBRID APPROACH)
+===============================================================================
+
+WHEN TO CHECK AUTH:
+-------------------
+1. ✅ On app initialization (first load)
+2. ✅ After login/register
+3. ✅ When token refresh fails (401 error)
+4. ❌ NOT on every route navigation
+
+HOW IT WORKS:
+-------------
+1. User opens app → Check auth ONCE
+2. User navigates → Trust existing auth state
+3. API call made → Axios interceptor checks token
+4. Token expired → Auto-refresh in background
+5. Refresh fails → Force logout & redirect to login
+
+
+===============================================================================
+📝 IMPLEMENTATION PLAN
+===============================================================================
+
+STEP 1: Setup Axios Instance with Interceptor
+----------------------------------------------
+
+// src/api/axiosInstance.js
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://your-backend-url/api', // Replace with your URL
+  withCredentials: true, // ✅ CRITICAL: Sends httpOnly cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Response Interceptor - Handles Token Refresh
+api.interceptors.response.use(
+  (response) => response, // Success - pass through
+  
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If 401 error and haven't retried yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Attempt to refresh tokens
+        await api.post('/auth/refresh-token');
+        
+        // Retry the original request with new tokens
+        return api(originalRequest);
+        
+      } catch (refreshError) {
+        // Refresh failed - user must re-login
+        // Clear auth state and redirect
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth-storage'); // Zustand persist key
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export default api;
+
+
+STEP 2: Create Auth Store (Zustand)
+------------------------------------
+
+// src/stores/authStore.js
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import api from '../api/axiosInstance';
+
+const useAuthStore = create(
+  persist(
+    (set) => ({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      hasCheckedAuth: false,
+
+      // Check authentication (call ONCE on app load)
+      checkAuth: async () => {
+        set({ isLoading: true });
+        try {
+          const response = await api.get('/auth/get-profile');
+          set({
+            user: response.data.user,
+            isAuthenticated: true,
+            hasCheckedAuth: true,
+            isLoading: false,
+          });
+        } catch (error) {
+          set({
+            user: null,
+            isAuthenticated: false,
+            hasCheckedAuth: true,
+            isLoading: false,
+          });
+        }
+      },
+
+      // Login
+      login: async (email, password) => {
+        const response = await api.post('/auth/login', { email, password });
+        return response.data; // Returns { requiresOtp: true, email }
+      },
+
+      // Verify OTP
+      verifyOtp: async (email, otp) => {
+        const response = await api.post('/auth/verify-otp', { email, otp });
+        set({
+          user: response.data.user,
+          isAuthenticated: true,
+        });
+        return response.data;
+      },
+
+      // Logout
+      logout: async () => {
+        try {
+          await api.post('/auth/logout');
+        } catch (error) {
+          console.error('Logout error:', error);
+        } finally {
+          set({
+            user: null,
+            isAuthenticated: false,
+          });
+        }
+      },
+
+      // Update user data (after profile update)
+      setUser: (user) => set({ user, isAuthenticated: true }),
+    }),
+    {
+      name: 'auth-storage', // localStorage key
+      partialize: (state) => ({
+        // Only persist user and isAuthenticated
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);
+
+export default useAuthStore;
+
+
+STEP 3: Check Auth on App Initialization
+-----------------------------------------
+
+// App.jsx or main.jsx
+import { useEffect } from 'react';
+import useAuthStore from './stores/authStore';
+
+function App() {
+  const { checkAuth, hasCheckedAuth } = useAuthStore();
+
+  // ✅ Check auth ONCE when app loads
+  useEffect(() => {
+    if (!hasCheckedAuth) {
+      checkAuth();
+    }
+  }, [checkAuth, hasCheckedAuth]);
+
+  return (
+    <div>
+      {/* Your routes */}
+    </div>
+  );
+}
+
+export default App;
+
+
+STEP 4: Protected Route Component
+----------------------------------
+
+// src/components/ProtectedRoute.jsx
+import { Navigate } from 'react-router-dom';
+import useAuthStore from '../stores/authStore';
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated, isLoading } = useAuthStore();
+
+  // Show loading while checking auth
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // User is authenticated, render the page
+  return children;
+}
+
+export default ProtectedRoute;
+
+
+STEP 5: Use Protected Routes
+-----------------------------
+
+// In your router setup
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import Dashboard from './pages/Dashboard';
+import Login from './pages/Login';
+
+function AppRouter() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* More protected routes */}
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
+
+STEP 6: Login Component Example
+--------------------------------
+
+// src/pages/Login.jsx
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import useAuthStore from '../stores/authStore';
+
+function Login() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [otp, setOtp] = useState('');
+  const [showOtpInput, setShowOtpInput] = useState(false);
+  const [error, setError] = useState('');
+  
+  const { login, verifyOtp } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const data = await login(email, password);
+      if (data.requiresOtp) {
+        setShowOtpInput(true);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Login failed');
+    }
+  };
+
+  const handleVerifyOtp = async (e) => {
+    e.preventDefault();
+    try {
+      await verifyOtp(email, otp);
+      navigate('/dashboard'); // Success!
+    } catch (err) {
+      setError(err.response?.data?.message || 'OTP verification failed');
+    }
+  };
+
+  if (showOtpInput) {
+    return (
+      <form onSubmit={handleVerifyOtp}>
+        <input
+          type="text"
+          placeholder="Enter OTP"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value)}
+        />
+        <button type="submit">Verify OTP</button>
+        {error && <p>{error}</p>}
+      </form>
+    );
+  }
+
+  return (
+    <form onSubmit={handleLogin}>
+      <input
+        type="email"
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Password"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
+      <button type="submit">Login</button>
+      {error && <p>{error}</p>}
+    </form>
+  );
+}
+
+export default Login;
+
+
+===============================================================================
+🔄 HOW TOKEN REFRESH WORKS (AUTOMATIC)
+===============================================================================
+
+FLOW:
+-----
+1. User makes API request (e.g., GET /api/auth/get-profile)
+2. Access token is expired (15 minutes passed)
+3. Backend returns 401 Unauthorized
+4. Axios interceptor catches the 401 error
+5. Interceptor calls POST /api/auth/refresh-token
+6. Backend validates refresh token (good for 7 days)
+7. Backend issues NEW access + refresh tokens
+8. Tokens stored in httpOnly cookies automatically
+9. Interceptor retries the original request
+10. Original request succeeds with new access token
+
+USER EXPERIENCE:
+----------------
+✅ Completely transparent
+✅ No loading states
+✅ No interruption
+✅ User stays logged in for 7 days (with activity)
+
+
+===============================================================================
+⏱️ SESSION TIMELINE
+===============================================================================
+
+Login → User stays logged in for 7 days (with periodic auto-refreshes)
+
+0 min       - Login successful, tokens issued
+15 min      - Access token expires → Auto-refresh → New tokens
+30 min      - Access token expires → Auto-refresh → New tokens
+45 min      - Access token expires → Auto-refresh → New tokens
+... continues every ~15 minutes when user is active ...
+7 days      - Refresh token expires → Must login again
+
+NOTE: Your backend ALREADY implements sliding sessions!
+Every refresh extends the 7-day window, so active users stay logged in.
+
+
+===============================================================================
+🔒 SECURITY FEATURES
+===============================================================================
+
+✅ httpOnly Cookies
+   - Tokens stored in httpOnly cookies
+   - JavaScript cannot access them
+   - Prevents XSS attacks
+
+✅ Secure Flag (Production)
+   - Cookies only sent over HTTPS
+   - Prevents man-in-the-middle attacks
+
+✅ SameSite Protection
+   - 'none' in production for cross-origin
+   - 'lax' in development
+   - Prevents CSRF attacks
+
+✅ Token Rotation
+   - New refresh token on every refresh
+   - Old tokens become invalid
+   - Prevents token reuse
+
+✅ Database Token Storage
+   - Refresh tokens stored in DB
+   - Can be revoked server-side
+   - Immediate logout capability
+
+✅ Short-lived Access Tokens
+   - 15-minute lifespan
+   - Limits exposure window
+   - Frequent rotation
+
+
+===============================================================================
+⚡ PERFORMANCE OPTIMIZATIONS
+===============================================================================
+
+1. Single Auth Check
+   ✓ Only check on app initialization
+   ✓ No repeated checks on route changes
+   ✓ Faster navigation
+
+2. Optimistic UI
+   ✓ Trust auth state until proven invalid
+   ✓ No loading spinners on every page
+   ✓ Better user experience
+
+3. Background Token Refresh
+   ✓ Happens automatically during API calls
+   ✓ User never sees it
+   ✓ No dedicated refresh polling
+
+4. LocalStorage Persistence
+   ✓ Auth state persists across page refreshes
+   ✓ No need to re-check on every reload
+   ✓ Instant app load
+
+5. Minimal DB Queries
+   ✓ No repeated profile fetches
+   ✓ Only refresh when needed
+   ✓ Lower server load
+
+
+===============================================================================
+🚨 IMPORTANT CORS SETUP
+===============================================================================
+
+Your backend already has correct CORS setup:
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:3000", 
+    "https://axokaze.vercel.app"
+  ],
+  credentials: true, // ✅ CRITICAL for cookies
+}));
+
+Frontend must use:
+- axios: withCredentials: true ✅
+- fetch: credentials: 'include' ✅
+
+
+===============================================================================
+📋 CHECKLIST
+===============================================================================
+
+Backend (Already Done ✅):
+  ✅ Refresh token endpoint (/api/auth/refresh-token)
+  ✅ Logout endpoint (/api/auth/logout)
+  ✅ CORS with credentials enabled
+  ✅ httpOnly cookies
+  ✅ Token rotation
+  ✅ Sliding sessions (refresh extends expiry)
+
+Frontend (To Implement):
+  ⬜ Setup axios instance with withCredentials: true
+  ⬜ Add response interceptor for auto token refresh
+  ⬜ Create Zustand store with checkAuth function
+  ⬜ Call checkAuth ONCE on app mount
+  ⬜ Create ProtectedRoute component
+  ⬜ Wrap protected pages with ProtectedRoute
+  ⬜ Remove auth checks from individual route components
+
+
+===============================================================================
+🎯 SUMMARY
+===============================================================================
+
+APPROACH: Hybrid (Security + Performance)
+
+SESSION DURATION:
+- Active user: 7 days (with auto-refresh every 15 min)
+- Inactive user: Logged out after 7 days of no activity
+
+STRATEGY:
+1. Check auth ONCE on app initialization
+2. Trust auth state during navigation
+3. Auto-refresh tokens in background via interceptor
+4. Force logout only when refresh fails
+
+STATE MANAGEMENT: Zustand (keep what you have)
+
+RESULT:
+✅ Fast navigation (no repeated API calls)
+✅ Secure (validates on init + auto-refresh)
+✅ Great UX (no loading flickers)
+✅ Fresh tokens (automatic rotation)
+✅ Real-time security (catches revoked sessions)
+
+This is the OPTIMAL approach for modern web applications!
+
+===============================================================================

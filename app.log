@@ -79,3 +79,8 @@
 [2025-10-27 23:55:40] info: 	📧 OTP sent to: harshilop72@gmail.com
 [2025-10-27 23:55:40] info: 	POST /api/auth/login ~ 200
 [2025-10-27 23:56:00] info: 	POST /api/auth/forgot-password ~ 200
+[2025-11-02 14:17:19] info: 	API is accessible @ http://localhost:5000/api
+[2025-11-02 14:17:19] info: 	MongoDB Connected @ ac-qqhzksq-shard-00-00.im2ut9j.mongodb.net
+[2025-11-02 14:17:26] info: 	📧 OTP sent to: harshilop72@gmail.com
+[2025-11-02 14:17:26] info: 	POST /api/auth/login ~ 200
+[2025-11-02 14:17:51] info: 	POST /api/auth/verify-otp ~ 200
