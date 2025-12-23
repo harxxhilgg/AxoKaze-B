@@ -87,7 +87,7 @@ export const register = async (req: Request, res: Response) => {
 
     // STORE REFRESH TOKEN IN DB
     newUser.refreshToken = refreshToken;
-    newUser.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    newUser.refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await newUser.save();
 
     // SET COOKIES
@@ -244,7 +244,7 @@ export const verifyOtp = async (req: Request, res: Response) => {
 
     // STORE REFRESH TOKEN IN DB
     user.refreshToken = refreshToken;
-    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
 
     // SET COOKIES
@@ -360,7 +360,7 @@ export const googleLogin = async (req: Request, res: Response) => {
 
     // STORE REFRESH TOKEN
     user.refreshToken = refreshToken;
-    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
 
     // SET COOKIES
@@ -482,7 +482,7 @@ export const testGoogleLogin = async (req: Request, res: Response) => {
 
     // STORE REFRESH TOKEN
     user.refreshToken = refreshToken;
-    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
 
     // SET COOKIES
@@ -622,7 +622,7 @@ export const refreshToken = async (req: Request, res: Response) => {
 
     // UPDATE REFRESH TOKEN IN DB
     user.refreshToken = newRefreshToken;
-    user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    user.refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await user.save();
 
     // SET NEW COOKIES

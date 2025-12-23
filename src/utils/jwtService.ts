@@ -10,8 +10,8 @@ if (!ACCESS_TOKEN_SECRET || !REFRESH_TOKEN_SECRET) {
   );
 }
 
-const ACCESS_TOKEN_EXPIRY = "15m"; // 15 minutes
-const REFRESH_TOKEN_EXPIRY = "7d"; // 7 days
+const ACCESS_TOKEN_EXPIRY = "1h"; // 1 hour
+const REFRESH_TOKEN_EXPIRY = "30d"; // 30 days
 
 interface TokenPayload {
   id: string;
@@ -62,7 +62,7 @@ export const setTokenCookies = (
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 15 * 60 * 1000, // 15 mins
+    maxAge: 60 * 60 * 1000, // 1 hour
   });
 
   // REFRESH TOKEN COOKIE
@@ -70,7 +70,7 @@ export const setTokenCookies = (
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
   });
 };
 
