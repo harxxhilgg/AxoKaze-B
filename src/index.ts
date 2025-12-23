@@ -87,11 +87,11 @@ app.use("/api/auth", authRoutes);
 
 // ROUTE HEALTH CHECK
 app.get("/", (req, res) => {
-  res.json({ message: "API is running", status: "ok" });
+  res.json({ message: "api is up.", endpoint: "/", status: "ok" });
 });
 
 app.get("/api", (req, res) => {
-  res.json({ message: "API endpoint is working." });
+  res.json({ message: "endpoint is up.", endpoint: "/api", status: "ok" });
 });
 
 // ONLY LISTEN ON LOCAL DEVELOPMENT

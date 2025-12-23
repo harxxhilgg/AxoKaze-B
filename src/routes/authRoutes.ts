@@ -11,7 +11,6 @@ import {
   resendOtp,
   refreshToken,
   googleLogin,
-  linkgoogleAccount,
   testGoogleLogin,
 } from "../controllers/authController";
 import { requireAuth } from "../middlewares/authMiddleware";
@@ -28,7 +27,7 @@ import { uploadProfilePicture } from "../middlewares/uploadMiddleware";
 const router = express.Router();
 
 router.get("/", (req, res) => {
-  res.json({ message: "Auth routes are up." });
+  res.json({ message: "endpoint is up.", endpoint: "/api/auth", status: "ok" });
 });
 
 // Public routes
@@ -51,6 +50,5 @@ router.put(
   uploadProfilePicture.single('profilePicture'),
   updateProfile
 );
-router.post("/link-google", requireAuth, linkgoogleAccount);
 
 export default router;
